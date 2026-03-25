@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Events | Home</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <nav>
+        <a href="index.html" class="nav-brand">CampusEvents</a>
+        <div class="nav-links" id="nav-links">
+            <a href="index.html">Events</a>
+            <a href="login.html" class="btn btn-outline">Login</a>
+            <a href="register.html" class="btn btn-primary">Sign Up</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="text-center mb-3">
+            <h1 class="page-title">Discover Campus Events</h1>
+            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                Stay connected with your campus community. Browse upcoming workshops, seminars, and networking events, and register seamlessly.
+            </p>
+        </div>
+
+        <div id="alert-container"></div>
+        <div class="events-grid" id="events-container">
+            <div class="text-center w-100" style="grid-column: 1 / -1; padding: 3rem;">
+                <i class="fa-solid fa-circle-notch fa-spin fa-3x" style="color: var(--primary);"></i>
+            </div>
+        </div>
+    </main>
+
+    <!-- Registration Details and Payment Modal -->
+    <div class="modal-overlay" id="registration-modal">
+        <div class="modal-content glass-panel" style="background: rgba(15, 23, 42, 0.95);">
+            <div class="modal-header">
+                <h2 style="color:white;">Complete Registration</h2>
+                <button class="close-btn" onclick="closeRegistrationModal()">&times;</button>
+            </div>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Please provide your attendee details and finalize payment to secure your spot.</p>
+            <div id="modal-alert-container"></div>
+            <form id="registration-form">
+                <input type="hidden" id="reg-event-id">
+                <div class="form-group">
+                    <label>Contact Phone Number</label>
+                    <input type="tel" id="reg-phone" class="form-control" required placeholder="(123) 456-7890">
+                </div>
+                <!-- Fake Payment Section -->
+                <div style="border-top: 1px solid var(--glass-border); padding-top: 1.5rem; margin-top: 1.5rem;">
+                    <h3 style="color: white; margin-bottom: 1rem;">Payment Method</h3>
+                    <div class="form-group">
+                        <label>Card Type</label>
+                        <select id="reg-payment-method" class="form-control" required>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="PayPal">PayPal</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="card-details-group">
+                        <label>Card Number</label>
+                        <input type="text" class="form-control" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" required>
+                    </div>
+                    <div class="form-group" style="display: flex; gap: 1rem;">
+                        <div style="flex:1;">
+                            <label>Expiry</label>
+                            <input type="text" class="form-control" placeholder="MM/YY" required>
+                        </div>
+                        <div style="flex:1;">
+                            <label>CVV</label>
+                            <input type="password" class="form-control" placeholder="123" maxlength="4" required>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-3" style="font-size: 1.1rem; padding: 0.8rem;">Pay & Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNavigation();
+            fetchEvents();
+        });
+
+        function updateNavigation() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const navLinks = document.getElementById('nav-links');
+
+            if (token && user.id) {
+                if (user.role === 'admin') {
+                    navLinks.innerHTML = `
+                        <a href="index.html">Events</a>
+                        <a href="admin.html">Admin Dashboard</a>
+                        <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+                    `;
+                } else {
+                    navLinks.innerHTML = `
+                        <a href="index.html">Events</a>
+                        <a href="dashboard.html">My Dashboard</a>
+                        <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+                    `;
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        async function fetchEvents() {
+            const container = document.getElementById('events-container');
+            try {
+                const response = await fetch(`${API_URL}/events`);
+                if (!response.ok) throw new Error('Failed to fetch events');
+                const events = await response.json();
+                
+                if (events.length === 0) {
+                    container.innerHTML = `<p class="text-center" style="grid-column: 1/-1; color: var(--text-muted);">No upcoming events found.</p>`;
+                    return;
+                }
+
+                container.innerHTML = events.map(event => {
+                    const date = new Date(event.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                    return `
+                        <div class="event-card glass-panel">
+                            <h3>${event.title}</h3>
+                            <p>${event.description}</p>
+                            <div class="event-meta">
+                                <span><i class="fa-regular fa-calendar"></i> ${date}</span>
+                                <span><i class="fa-solid fa-location-dot"></i> ${event.venue}</span>
+                            </div>
+                            <button class="btn btn-primary mt-3 w-100" onclick="openRegistrationModal(${event.id})">Register & Pay Now</button>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `
+                    <div class="alert alert-error" style="grid-column: 1/-1;">
+                        Could not load events. Please ensure the backend server and MySQL database are running.
+                    </div>
+                `;
+            }
+        }
+
+        function openRegistrationModal(eventId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('reg-event-id').value = eventId;
+            document.getElementById('registration-modal').classList.add('active');
+            document.getElementById('registration-form').reset();
+            document.getElementById('modal-alert-container').innerHTML = '';
+        }
+
+        function closeRegistrationModal() {
+            document.getElementById('registration-modal').classList.remove('active');
+        }
+
+        document.getElementById('registration-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            const alertContainer = document.getElementById('modal-alert-container');
+            const mainAlert = document.getElementById('alert-container');
+            
+            const eventId = document.getElementById('reg-event-id').value;
+            const phone = document.getElementById('reg-phone').value;
+            const paymentMethod = document.getElementById('reg-payment-method').value;
+
+            try {
+                const btn = e.target.querySelector('button[type="submit"]');
+                const oldText = btn.innerText;
+                btn.innerText = 'Processing Payment...';
+                btn.disabled = true;
+
+                const response = await fetch(`${API_URL}/events/${eventId}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ phone, paymentMethod })
+                });
+
+                const data = await response.json();
+                
+                btn.innerText = oldText;
+                btn.disabled = false;
+
+                if (response.ok) {
+                    closeRegistrationModal();
+                    mainAlert.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                    window.scrollTo(0,0);
+                    setTimeout(() => { mainAlert.innerHTML = ''; }, 6000);
+                } else {
+                    alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+                }
+
+            } catch (error) {
+                alertContainer.innerHTML = `<div class="alert alert-error">An error occurred while processing payment.</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

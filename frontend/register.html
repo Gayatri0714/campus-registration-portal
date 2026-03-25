@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | Campus Events</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <nav>
+        <a href="index.html" class="nav-brand">CampusEvents</a>
+        <div class="nav-links">
+            <a href="index.html">Events</a>
+            <a href="login.html" class="btn btn-outline">Login</a>
+            <a href="register.html" class="btn btn-primary" style="opacity: 0.8;">Sign Up</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="form-container glass-panel">
+            <h2 class="form-title">Create Account</h2>
+            <div id="alert-container"></div>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" class="form-control" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" required placeholder="name@campus.edu">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary w-100" style="padding: 0.8rem;">Register</button>
+            </form>
+            <div class="form-footer">
+                Already have an account? <a href="login.html">Login here</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const alertContainer = document.getElementById('alert-container');
+
+            try {
+                const res = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alertContainer.innerHTML = `<div class="alert alert-success">Registration successful! Redirecting to login...</div>`;
+                    setTimeout(() => window.location.href = 'login.html', 1500);
+                } else {
+                    alertContainer.innerHTML = `<div class="alert alert-error">${data.message}</div>`;
+                }
+            } catch (err) {
+                alertContainer.innerHTML = `<div class="alert alert-error">Network error. Is the server running?</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
